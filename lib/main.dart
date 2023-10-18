@@ -1,96 +1,78 @@
 import 'package:flutter/material.dart';
-import 'login_page.dart'; // Import the login page
-import 'signup_page.dart'; // Import the signup page
+import 'dance_styles_page.dart';
+import 'moves_listing_page.dart';
+import 'move_description_page.dart';
 
 void main() {
   runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  // ...
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      // ...
       routes: {
-        '/login': (context) => LoginPage(),   // Add the login page route
-        '/signup': (context) => SignupPage(), // Add the signup page route
+        '/dance_styles': (context) => DanceStylesPage(), // Add the dance styles route
+        '/moves_listing': (context) => MoveListingPage(), // Add the dance styles route
+        '/move_description': (context) => MoveDetailPage(), // Add the dance styles route
+
       },
-      home:  MyHomePage(title: 'Ministry Of Dance'),
+      home: MyHomePage(title: 'Ministry Of Dance'),
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
-  // ...
-  final String title; // Add this line
+  final String title;
 
-  MyHomePage({required this.title}); // Add this constructor
+  MyHomePage({required this.title});
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();
 }
+
 class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Color(0xFF533A71), // Set header background color
-        title: Text(
-          'MINISTRY OF DANCE', // Header text
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-      backgroundColor: Colors.black, // Set page background color to black
+      backgroundColor: Colors.black,
       body: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Image.asset(
-                  'assets/logo.png', // Path to your logo image
-                  height: 100, // Adjust the height as needed
-                ),
-                SizedBox(height: 20), // Add some spacing
-                Text(
-                  'Elevating dancers through tradition, technology, and AI at Ministry of Dance.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                  ),
-                ),
-              ],
+          Spacer(),
+          Text(
+            'Ministry Of Dance',
+            style: TextStyle(
+              fontSize: 30, // Adjust the font size as needed
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF533A71),
             ),
           ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              FloatingActionButton(
-                backgroundColor: Color(0xFF533A71),
-                onPressed: () {
-                  Navigator.pushNamed(context, '/login');
-                },
-                tooltip: 'Login',
-                child: const Icon(Icons.login, color: Colors.white),
-              ),
-              SizedBox(width: 20),
-              FloatingActionButton(
-                backgroundColor: Color(0xFF533A71),
-                onPressed: () {
-                  Navigator.pushNamed(context, '/signup');
-                },
-                tooltip: 'Sign Up',
-                child: const Icon(Icons.person_add, color: Colors.white),
-              ),
-            ],
+          SizedBox(height: 20),
+          Center(
+            child: Image.asset(
+              'assets/logo.png',
+              height: 100,
+            ),
           ),
+          SizedBox(height: 20),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              primary: Color(0xFF533A71),
+              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            ),
+            onPressed: () {
+              Navigator.pushNamed(context, '/dance_styles'); // Navigate to the dance styles page
+            },
+            child: Text(
+              'Enter Dance Realm',
+              style: TextStyle(
+                fontSize: 18,
+                color: Colors.white,
+              ),
+            ),
+          ),
+          Spacer(),
         ],
       ),
     );
