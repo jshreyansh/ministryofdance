@@ -1,92 +1,105 @@
 import 'package:flutter/material.dart';
-import 'move_description_page.dart'; // Import your move description page
+class LoginScreen extends StatefulWidget {
+  @override
+  _LoginScreenState createState() => _LoginScreenState();
+}
 
-class MoveListingPage extends StatelessWidget {
-  // Define an array of dance styles
-  final List<String> danceStyles = [
-    'The Wop',
-    'Running Man',
-    'Mike Tyson',
-    'Gucci',
-    'Smurf',
-    'Steve Martin',
-    'Robocop',
-    'Stomp',
-    'BK Bounce (Brooklyn Bounce, Criss Cross)',
-    'Basketball',
-    'ATL/A-Town Stomp',
-    'Harlem Shake',
-    'Dice Game',
-    'Roger Rabbit (Reject)',
-    'Bart Simpson',
-    'The Prep',
-    'Wu-Tang',
-    'Bankhead Bounce',
-    'Monastery',
-    'The Snake',
-  ];
+class _LoginScreenState extends State<LoginScreen> {
+  final TextEditingController _controller = TextEditingController();
+  final List<String> validNumbers = ['8770026706', '9929995821', '9340112067'];
+  String _errorMessage = '';
 
-  // Function to create a list of ElevatedButtons from the danceStyles array
-  List<Widget> buildMovesButtons(BuildContext context) {
-    return danceStyles.map((style) {
-      return Container(
-        width: MediaQuery.of(context).size.width * 0.8,
-        height: 58.0,
-        margin: EdgeInsets.only(bottom: 20.0),
-        child: ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            primary: Color(0xFF533A71),
-            onPrimary: Colors.white,
-            padding: EdgeInsets.all(16),
-            alignment: Alignment.center,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20.0),
-            ),
-            elevation: 5,
-            shadowColor: Colors.white,
-          ),
-          onPressed: () {
-            // Handle the button action, navigate to the move description page
-            Navigator.pushNamed(context, '/move_description');
-          },
-          child: Text(
-            style,
-            style: TextStyle(
-              fontSize: 18,
-              color: Colors.white,
-            ),
-          ),
-        ),
-      );
-    }).toList();
+  void _validateAndNavigate() {
+    if (validNumbers.contains(_controller.text)) {
+      // Clear error message
+      setState(() {
+        _errorMessage = '';
+      });
+      // Navigate to dance styles page
+      Navigator.pushNamed(context, '/dance_styles');
+    } else {
+      // Show error message
+      setState(() {
+        _errorMessage = 'Invalid number, please try again.';
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Color(0xFF533A71),
-      ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start, // Align text to the left
           children: [
-            SizedBox(height: 80),
-            Text(
-              'HIP HOP DICTIONARY',
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 50.0),
+              child: Text(
+                'Login with ID ',
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xffbf9000), // Gold color for the text
+                ),
               ),
             ),
             SizedBox(height: 40),
-            Expanded(
-              child: ListView(
-                children: buildMovesButtons(context),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 50.0),
+              child: TextField(
+                controller: _controller,
+                keyboardType: TextInputType.phone,
+                decoration: InputDecoration(
+                  hintText: 'Enter your ID',
+                  errorText: _errorMessage.isNotEmpty ? _errorMessage : null,
+                  hintStyle: TextStyle(color: Colors.grey),
+                  enabledBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.grey),
+                    borderRadius: BorderRadius.circular(20.0),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: Color(0xffbf9000)),
+                    borderRadius: BorderRadius.circular(20.0),
+                  ),
+                ),
+                style: TextStyle(color: Colors.white),
               ),
             ),
+            SizedBox(height: 20),
+            Align(
+              alignment: Alignment.centerRight, // Align button to the right
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 50.0),
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Color(0xffbf9000), // Set button background color to #bf9000
+                    padding: EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20.0),
+                    ),
+                  ),
+                  onPressed: _validateAndNavigate,
+                  child: Text(
+                    'Lets Chat',
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            if (_errorMessage.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 50.0),
+                child: Text(
+                  _errorMessage,
+                  style: TextStyle(color: Colors.red, fontSize: 14),
+                  textAlign: TextAlign.left, // Align error text to the left
+                ),
+              ),
           ],
         ),
       ),

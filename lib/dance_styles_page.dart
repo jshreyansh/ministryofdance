@@ -1,84 +1,150 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 
-class DanceStylesPage extends StatelessWidget {
-  // Define an array of dance styles
-  final List<String> danceStyles = [
-    'House',
-    'Hip-Hop',
-    'Vogue',
-    'Bollywood',
-    'Krump',
-    'Bboy',
-    'Wacking',
-    'Locking',
-    'Popping',
-    'Boogloo',
-    'Memphin Junkins',
-    'Ballet',
-    'Dancehall',
-  ];
+class DanceStylesPage extends StatefulWidget {
+  @override
+  _DanceStylesPageState createState() => _DanceStylesPageState();
+}
 
-  // Function to create a list of ElevatedButtons from the danceStyles array
-  List<Widget> buildDanceStyleButtons(BuildContext context) {
-    return danceStyles.map((style) {
-      return Container(
-        width: MediaQuery.of(context).size.width * 0.8, // Set width to 80% of the screen width
-        height: 68.0, // Reduce the button's height by 40%
-        margin: EdgeInsets.only(bottom: 40.0), // Add more spacing between list tiles
-        child: ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            primary: Color(0xFF533A71), // Set button background color to 0xFF533A71
-            onPrimary: Colors.white, // Set text color to white
-            padding: EdgeInsets.all(16), // Increase padding for spacing
-            alignment: Alignment.center, // Center the text
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20.0), // Rounded boundaries
-            ),
-            elevation: 5, // Add elevation to the button
-            shadowColor: Colors.white, // Set shadow color to white
-          ),
-          onPressed: () {
-            // Handle the button action, e.g., navigate to the dance realm
-            Navigator.pushNamed(context, '/moves_listing');
-          },
-          child: Text(
-            style,
-            style: TextStyle(
-              fontSize: 18,
-              color: Colors.white, // Text color is white
-            ),
-          ),
-        ),
-      );
-    }).toList();
+class _DanceStylesPageState extends State<DanceStylesPage> {
+  final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
+  final List<Message> _messages = [];
+  final TextEditingController _controller = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    // Schedule the initial messages with a 2-second gap between them
+    Timer(Duration(seconds: 2), () {
+      _addMessage(Message(text: 'Hi', isSentByMe: false), animate: true);
+      Timer(Duration(seconds: 2), () {
+        _addMessage(Message(text: 'I\'m Your Guy to help you with your Expense Sir', isSentByMe: false), animate: true);
+      });
+    });
+  }
+
+  void _addMessage(Message message, {bool animate = false}) {
+    final int index = _messages.length;
+    _messages.add(message);
+    if (animate) {
+      _listKey.currentState?.insertItem(index);
+    }
+  }
+
+  void _sendMessage() {
+    final text = _controller.text;
+    if (text.isNotEmpty) {
+      _addMessage(Message(text: text, isSentByMe: true), animate: true);
+      _controller.clear();
+
+      // Simulate fetching response from the API after a 1-second delay
+      Future.delayed(Duration(seconds: 1), () {
+        String apiResponse = 'Dummy response from API...';
+        _addMessage(Message(text: apiResponse.substring(0, 20), isSentByMe: false), animate: true);
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black, // Set the background color to black
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            SizedBox(height: 100), // Add 40px padding at the top
-            Text(
-              'CHOOSE YOUR VIBE',
-              style: TextStyle(
-                fontSize: 28, // Reduce the heading's font size by 40%
-                fontWeight: FontWeight.bold,
-                color: Colors.white, // Text color is white
-              ),
-            ),
-            SizedBox(height: 40), // Add 40px padding at the bottom
-            Expanded(
-              child: ListView(
-                children: buildDanceStyleButtons(context),
-              ),
-            ),
-          ],
+      appBar: AppBar(
+        backgroundColor: Color(0xff5b5b5b),
+        title: Text(
+          "My Guy",
+          style: TextStyle(color: Colors.white),
         ),
+        centerTitle: true,
+        actions: [
+          PopupMenuButton<String>(
+            onSelected: (value) {
+              if (value == 'Logout') {
+                _logout();
+              }
+            },
+            itemBuilder: (BuildContext context) {
+              return {'Logout'}.map((String choice) {
+                return PopupMenuItem<String>(
+                  value: choice,
+                  child: Text(choice),
+                );
+              }).toList();
+            },
+            icon: Icon(Icons.person, color: Color(0xffbf9000)),
+          ),
+        ],
+      ),
+      backgroundColor: Colors.black,
+      body: Column(
+        children: [
+          Expanded(
+            child: AnimatedList(
+              key: _listKey,
+              padding: EdgeInsets.only(top: 8.0), // Increased padding from the top
+              initialItemCount: _messages.length,
+              itemBuilder: (context, index, animation) {
+                final message = _messages[index];
+                return SlideTransition(
+                  position: animation.drive(Tween(begin: Offset(0, 1), end: Offset.zero)),
+                  child: Align(
+                    alignment: message.isSentByMe ? Alignment.centerRight : Alignment.centerLeft,
+                    child: Container(
+                      padding: EdgeInsets.all(8.0),
+                      margin: EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
+                      decoration: BoxDecoration(
+                        color: message.isSentByMe ? Color(0xffbf9000) : Colors.grey[700],
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        message.text,
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          Divider(height: 1),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
+            child: Row(
+              children: <Widget>[
+                Expanded(
+                  child: TextField(
+                    controller: _controller,
+                    decoration: InputDecoration(
+                      hintText: "Type a message",
+                      hintStyle: TextStyle(color: Colors.white54),
+                      border: InputBorder.none,
+                      filled: true,
+                      fillColor: Colors.grey[800],
+                      contentPadding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 20.0),
+                    ),
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(Icons.send),
+                  color: Color(0xffbf9000), // Set the send button color to #bf9000
+                  onPressed: _sendMessage,
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
+
+  void _logout() {
+    Navigator.pushReplacementNamed(context, '/moves_listing');
+  }
+}
+
+class Message {
+  String text;
+  bool isSentByMe;
+
+  Message({required this.text, required this.isSentByMe});
 }
