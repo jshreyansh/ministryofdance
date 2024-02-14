@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 class DanceStylesPage extends StatefulWidget {
   @override
@@ -14,7 +16,6 @@ class _DanceStylesPageState extends State<DanceStylesPage> {
   @override
   void initState() {
     super.initState();
-    // Schedule the initial messages with a 2-second gap between them
     Timer(Duration(seconds: 2), () {
       _addMessage(Message(text: 'Hi', isSentByMe: false), animate: true);
       Timer(Duration(seconds: 2), () {
@@ -31,29 +32,53 @@ class _DanceStylesPageState extends State<DanceStylesPage> {
     }
   }
 
-  void _sendMessage() {
+  void _sendMessage() async {
     final text = _controller.text;
     if (text.isNotEmpty) {
       _addMessage(Message(text: text, isSentByMe: true), animate: true);
       _controller.clear();
-
-      // Simulate fetching response from the API after a 1-second delay
-      Future.delayed(Duration(seconds: 1), () {
-        String apiResponse = 'Dummy response from API...';
-        _addMessage(Message(text: apiResponse.substring(0, 20), isSentByMe: false), animate: true);
-      });
+      await _fetchResponseFromAPI(text);
     }
   }
+
+Future<void> _fetchResponseFromAPI(String query) async {
+  final url = Uri.parse('https://personal-agent-backend.onrender.com/api/chat_now');
+  final headers = {'Content-Type': 'application/json'};
+  final body = json.encode({
+    "user_message": "100 grocery",
+    "id": "24"
+  });
+
+  try {
+    final response = await http.post(url, headers: headers, body: body);
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+
+      // Check if 'result' is not null
+      if (data['result'] != null) {
+        // Use the 'result' field to display the message
+        _addMessage(Message(text: data['result'], isSentByMe: false), animate: true);
+      } else {
+        // Handle the case where 'result' is null
+        _addMessage(Message(text: 'No result found.', isSentByMe: false), animate: true);
+      }
+    } else {
+      // Log error status code
+      _addMessage(Message(text: 'Error fetching data: ${response.statusCode}', isSentByMe: false), animate: true);
+    }
+  } catch (e) {
+    // Log any exceptions
+    _addMessage(Message(text: 'Error: $e', isSentByMe: false), animate: true);
+  }
+}
+
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Color(0xff5b5b5b),
-        title: Text(
-          "My Guy",
-          style: TextStyle(color: Colors.white),
-        ),
+        title: Text("My Guy", style: TextStyle(color: Colors.white)),
         centerTitle: true,
         actions: [
           PopupMenuButton<String>(
@@ -80,7 +105,7 @@ class _DanceStylesPageState extends State<DanceStylesPage> {
           Expanded(
             child: AnimatedList(
               key: _listKey,
-              padding: EdgeInsets.only(top: 8.0), // Increased padding from the top
+              padding: EdgeInsets.only(top: 8.0),
               initialItemCount: _messages.length,
               itemBuilder: (context, index, animation) {
                 final message = _messages[index];
@@ -95,10 +120,7 @@ class _DanceStylesPageState extends State<DanceStylesPage> {
                         color: message.isSentByMe ? Color(0xffbf9000) : Colors.grey[700],
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: Text(
-                        message.text,
-                        style: TextStyle(color: Colors.white),
-                      ),
+                      child: Text(message.text, style: TextStyle(color: Colors.white)),
                     ),
                   ),
                 );
@@ -126,7 +148,7 @@ class _DanceStylesPageState extends State<DanceStylesPage> {
                 ),
                 IconButton(
                   icon: Icon(Icons.send),
-                  color: Color(0xffbf9000), // Set the send button color to #bf9000
+                  color: Color(0xffbf9000),
                   onPressed: _sendMessage,
                 ),
               ],
