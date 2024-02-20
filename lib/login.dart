@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'otp_input_screen.dart'; // Make sure to create this file
+
 class LoginScreen extends StatefulWidget {
   @override
   _LoginScreenState createState() => _LoginScreenState();
@@ -15,8 +17,11 @@ class _LoginScreenState extends State<LoginScreen> {
       setState(() {
         _errorMessage = '';
       });
-      // Navigate to dance styles page
-      Navigator.pushNamed(context, '/dance_styles');
+      // Navigate to OTP input screen
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => OTPInputScreen()),
+      );
     } else {
       // Show error message
       setState(() {
@@ -25,7 +30,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  @override
+   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,

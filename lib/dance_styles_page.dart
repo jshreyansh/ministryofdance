@@ -3,12 +3,12 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
-class DanceStylesPage extends StatefulWidget {
+class ChatView extends StatefulWidget {
   @override
-  _DanceStylesPageState createState() => _DanceStylesPageState();
+  _ChatViewState createState() => _ChatViewState();
 }
 
-class _DanceStylesPageState extends State<DanceStylesPage> {
+class _ChatViewState extends State<ChatView> {
   final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
   final List<Message> _messages = [];
   final TextEditingController _controller = TextEditingController();
@@ -41,36 +41,36 @@ class _DanceStylesPageState extends State<DanceStylesPage> {
     }
   }
 
-Future<void> _fetchResponseFromAPI(String query) async {
-  final url = Uri.parse('https://personal-agent-backend.onrender.com/api/chat_now');
-  final headers = {'Content-Type': 'application/json'};
-  final body = json.encode({
-    "user_message": "100 grocery",
-    "id": "24"
-  });
+  Future<void> _fetchResponseFromAPI(String query) async {
+    final url = Uri.parse('https://personal-agent-backend.onrender.com/api/chat_now');
+    final headers = {'Content-Type': 'application/json'};
+    final body = json.encode({
+      "user_message": query,
+      "id": "24"
+    });
 
-  try {
-    final response = await http.post(url, headers: headers, body: body);
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
+    try {
+      final response = await http.post(url, headers: headers, body: body);
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
 
-      // Check if 'result' is not null
-      if (data['result'] != null) {
-        // Use the 'result' field to display the message
-        _addMessage(Message(text: data['result'], isSentByMe: false), animate: true);
+        // Check if 'result' is not null
+        if (data['result'] != null) {
+          // Use the 'result' field to display the message
+          _addMessage(Message(text: data['result'], isSentByMe: false), animate: true);
+        } else {
+          // Handle the case where 'result' is null
+          _addMessage(Message(text: 'No result found.', isSentByMe: false), animate: true);
+        }
       } else {
-        // Handle the case where 'result' is null
-        _addMessage(Message(text: 'No result found.', isSentByMe: false), animate: true);
+        // Log error status code
+        _addMessage(Message(text: 'Error fetching data: ${response.statusCode}', isSentByMe: false), animate: true);
       }
-    } else {
-      // Log error status code
-      _addMessage(Message(text: 'Error fetching data: ${response.statusCode}', isSentByMe: false), animate: true);
+    } catch (e) {
+      // Log any exceptions
+      _addMessage(Message(text: 'Error: $e', isSentByMe: false), animate: true);
     }
-  } catch (e) {
-    // Log any exceptions
-    _addMessage(Message(text: 'Error: $e', isSentByMe: false), animate: true);
   }
-}
 
 
   @override

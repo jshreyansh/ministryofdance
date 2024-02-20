@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 import 'dance_styles_page.dart';
-import 'moves_listing_page.dart';
+import 'login.dart';
 import 'move_description_page.dart';
 import 'dart:async';
 void main() {
@@ -12,8 +14,8 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       routes: {
-        '/dance_styles': (context) => DanceStylesPage(), // Add the dance styles route
-        '/moves_listing': (context) => LoginScreen(), // Add the dance styles route
+        '/chatView': (context) => ChatView(), // Add the dance styles route
+        '/login': (context) => LoginScreen(), // Add the dance styles route
         '/move_description': (context) => MoveDetailPage(), // Add the dance styles route
 
       },
@@ -36,8 +38,20 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
-    Timer(Duration(milliseconds: 2500), () { // Set the timer to 2.5 seconds
-      Navigator.pushReplacementNamed(context, '/moves_listing'); // Automatically navigate after 2.5 seconds
+    _checkLoginStatus();
+  }
+
+  Future<void> _checkLoginStatus() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+
+    Timer(Duration(milliseconds: 2500), () {
+      // Navigate based on the login status after 2.5 seconds
+      if (isLoggedIn) {
+        Navigator.pushReplacementNamed(context, '/chatView'); // Go to chat route if logged in
+      } else {
+        Navigator.pushReplacementNamed(context, '/login'); // Go to login route if not logged in
+      }
     });
   }
 
