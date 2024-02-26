@@ -40,6 +40,7 @@ dependencies:
   material_color_utilities: ^0.5.0 # Updated
   meta: ^1.10.0 # Updated
   shared_preferences: ^2.0.15
+  fluttertoast: ^8.0.8
 #  path: ^1.9.0 # Updated
 #  test_api: ^0.6.1
 dev_dependencies:

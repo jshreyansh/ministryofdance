@@ -1,8 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class OTPInputScreen extends StatefulWidget {
+  final String verificationId;
+  final String phoneNumber;
+  final String authToken;
+  
+  OTPInputScreen({Key? key, required this.verificationId, required this.phoneNumber, required this.authToken}) : super(key: key);
+
+  
   @override
   _OTPInputScreenState createState() => _OTPInputScreenState();
 }
@@ -19,28 +28,51 @@ class _OTPInputScreenState extends State<OTPInputScreen> {
   final _focusNodeTwo = FocusNode();
   final _focusNodeThree = FocusNode();
   final _focusNodeFour = FocusNode();
-
-  final String _validOTP = '4444'; // Hardcoded OTP for demonstration
   String _errorMessage = '';
 
   Future<void> _validateOTPAndNavigate() async {
-    String enteredOTP = _otpControllerOne.text + 
+  String enteredOTP = _otpControllerOne.text + 
                       _otpControllerTwo.text + 
                       _otpControllerThree.text + 
                       _otpControllerFour.text;
-    if (enteredOTP == _validOTP) {
-      // OTP is valid, navigate to chat view
-			final SharedPreferences prefs = await SharedPreferences.getInstance();
-			await prefs.setBool('isLoggedIn', true);
 
-      Navigator.pushNamed(context, '/chatView'); // Make sure this route is defined in your app
+  final String apiUrl = 'https://personal-agent-backend.onrender.com/api/verify_otp';
+  print('otp>>>>>>>>>>> $enteredOTP');
+  try {
+    final response = await http.post(
+      Uri.parse(apiUrl),
+      headers: {
+        'Content-Type': 'application/json',
+        'authToken': widget.authToken,
+      },
+      body: jsonEncode({
+        "phone_number": widget.phoneNumber,
+        "verification_id": widget.verificationId,
+        "otp_code": enteredOTP,
+      }),
+    );
+    // final responseData= json.decode(response.body);
+    print('response>>>>>>>>>>> ${response.body}');
+    if (response.statusCode == 200) {
+
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('isLoggedIn', true);
+
+      Navigator.pushNamed(context, '/chatView'); // Ensure you have defined this route
     } else {
-      // Show error message
+      // Handle OTP verification failure
       setState(() {
         _errorMessage = 'Invalid OTP, please try again.';
       });
     }
+  } catch (e) {
+    // Handle network error or invalid JSON response
+    print('error>>>>>>>>>>>>$e');
+    setState(() {
+      _errorMessage = 'Network error, please try again later.';
+    });
   }
+}
 
   @override
   void dispose() {
