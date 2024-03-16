@@ -7,17 +7,28 @@ class ChatView extends StatefulWidget {
   _ChatViewState createState() => _ChatViewState();
 }
 
-class _ChatViewState extends State<ChatView> {
+class _ChatViewState extends State<ChatView> with SingleTickerProviderStateMixin {
   final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
   final List<Message> _messages = [];
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   String? _authToken;
+  late TabController _tabController;
+  List<String> _savedMessages = [];
 
   @override
   void initState() {
     super.initState();
     _initializeUser();
+    _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(_handleTabChange);
+  }
+
+  @override
+  void dispose() {
+    _tabController.removeListener(_handleTabChange);
+    _tabController.dispose();
+    super.dispose();
   }
 
   Future<void> _initializeUser() async {
@@ -82,6 +93,10 @@ class _ChatViewState extends State<ChatView> {
     }
   }
 
+  void _handleTabChange() {
+    setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -115,64 +130,117 @@ class _ChatViewState extends State<ChatView> {
       backgroundColor: Colors.black,
       body: Column(
         children: [
-          Expanded(
-            child: AnimatedList(
-              key: _listKey,
-              controller: _scrollController,
-              padding: EdgeInsets.only(bottom: 10),
-              initialItemCount: _messages.length,
-              itemBuilder: (context, index, animation) {
-                final message = _messages[index];
-                return FadeTransition(
-                  opacity: animation,
-                  child: SlideTransition(
-                    position: animation.drive(Tween(begin: Offset(0, 0.1), end: Offset.zero)),
-                    child: Align(
-                      alignment: message.isSentByMe ? Alignment.centerRight : Alignment.centerLeft,
-                      child: Container(
-                        padding: EdgeInsets.all(8.0),
-                        margin: EdgeInsets.symmetric(vertical: 2.0, horizontal: 8.0),
-                        decoration: BoxDecoration(
-                          color: message.isSentByMe ? Color(0xffbf9000) : Colors.grey[700],
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(message.text, style: TextStyle(color: Colors.white)),
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
+          TabBar(
+            controller: _tabController,
+            tabs: [
+              Tab(text: 'Chat'),
+              Tab(text: 'Notes'),
+            ],
+            indicatorColor: Colors.white,
           ),
-          Divider(height: 1),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
-            child: Row(
-              children: <Widget>[
-                Expanded(
-                  child: TextField(
-                    controller: _controller,
-                    decoration: InputDecoration(
-                      hintText: "Type a message",
-                      hintStyle: TextStyle(color: Colors.white54),
-                      border: InputBorder.none,
-                      filled: true,
-                      fillColor: Colors.grey[800],
-                      contentPadding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 20.0),
-                    ),
-                    style: TextStyle(color: Colors.white),
-                  ),
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                // Chat Screen
+                AnimatedList(
+                  key: _listKey,
+                  controller: _scrollController,
+                  padding: EdgeInsets.only(bottom: 10),
+                  initialItemCount: _messages.length,
+                  itemBuilder: (context, index, animation) {
+                    final message = _messages[index];
+                    return FadeTransition(
+                      opacity: animation,
+                      child: SlideTransition(
+                        position: animation.drive(Tween(begin: Offset(0, 0.1), end: Offset.zero)),
+                        child: Align(
+                          alignment: message.isSentByMe ? Alignment.centerRight : Alignment.centerLeft,
+                          child: Container(
+                            padding: EdgeInsets.all(8.0),
+                            margin: EdgeInsets.symmetric(vertical: 2.0, horizontal: 8.0),
+                            decoration: BoxDecoration(
+                              color: message.isSentByMe ? Color(0xffbf9000) : Colors.grey[700],
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(message.text, style: TextStyle(color: Colors.white)),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
                 ),
-                IconButton(
-                  icon: Icon(Icons.send, color: Color(0xffbf9000)),
-                  onPressed: _sendMessage,
-                ),
+                // Notes Screen
+                _buildNotesScreen(),
               ],
             ),
           ),
+          if (_tabController.index == 0) // Show input box and send button only in the chat section
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
+              child: Row(
+                children: <Widget>[
+                  Expanded(
+                    child: TextField(
+                      controller: _controller,
+                      decoration: InputDecoration(
+                        hintText: "Type a message",
+                        hintStyle: TextStyle(color: Colors.white54),
+                        border: InputBorder.none,
+                        filled: true,
+                        fillColor: Colors.grey[800],
+                        contentPadding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 20.0),
+                      ),
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.send, color: Color(0xffbf9000)),
+                    onPressed: _sendMessage,
+                  ),
+                ],
+              ),
+            ),
         ],
       ),
     );
+  }
+
+  Widget _buildNotesScreen() {
+    return FutureBuilder(
+      future: _fetchSavedMessages(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        }
+        if (_savedMessages.isEmpty) {
+          return Center(child: Text('No saved messages.'));
+        }
+        return ListView.builder(
+          itemCount: _savedMessages.length,
+          itemBuilder: (context, index) {
+            final message = _savedMessages[index];
+            return ListTile(
+              title: Text(message, style: TextStyle(color: Colors.white)),
+              trailing: IconButton(
+                icon: Icon(Icons.delete, color: Colors.white),
+                onPressed: () => _deleteMessage(index),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _fetchSavedMessages() async {
+    if (_authToken == null) return;
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    String key = 'sentMessages_$_authToken';
+    _savedMessages = prefs.getStringList(key) ?? [];
   }
 
   Future<void> _fetchAndShowSavedMessages() async {
@@ -186,8 +254,18 @@ class _ChatViewState extends State<ChatView> {
     });
   }
 
-  void _logout() {
+  void _logout() async {
+    // final SharedPreferences prefs = await SharedPreferences.getInstance();
+    // await prefs.clear();
     Navigator.pushReplacementNamed(context, '/login');
+  }
+
+  void _deleteMessage(int index) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    String key = 'sentMessages_$_authToken';
+    _savedMessages.removeAt(index);
+    await prefs.setStringList(key, _savedMessages);
+    setState(() {}); // Refresh UI
   }
 }
 
