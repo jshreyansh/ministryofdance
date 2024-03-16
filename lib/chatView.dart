@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/services.dart'; // Needed for accessing clipboard
 
 class ChatView extends StatefulWidget {
   @override
@@ -219,18 +220,32 @@ class _ChatViewState extends State<ChatView> with SingleTickerProviderStateMixin
         if (_savedMessages.isEmpty) {
           return Center(child: Text('No saved messages.'));
         }
-        return ListView.builder(
-          itemCount: _savedMessages.length,
-          itemBuilder: (context, index) {
-            final message = _savedMessages[index];
-            return ListTile(
-              title: Text(message, style: TextStyle(color: Colors.white)),
-              trailing: IconButton(
-                icon: Icon(Icons.delete, color: Colors.white),
-                onPressed: () => _deleteMessage(index),
+        return Stack(
+          children: [
+            ListView.builder(
+              itemCount: _savedMessages.length,
+              itemBuilder: (context, index) {
+                final message = _savedMessages[index];
+                return ListTile(
+                  title: Text(message, style: TextStyle(color: Colors.white)),
+                  trailing: IconButton(
+                    icon: Icon(Icons.delete, color: Colors.white),
+                    onPressed: () => _deleteMessage(index),
+                  ),
+                );
+              },
+            ),
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 16.0),
+                child: ElevatedButton(
+                  onPressed: _copyToClipboard,
+                  child: Text('Copy', style: TextStyle(color: Colors.black)),
+                ),
               ),
-            );
-          },
+            ),
+          ],
         );
       },
     );
@@ -266,6 +281,14 @@ class _ChatViewState extends State<ChatView> with SingleTickerProviderStateMixin
     _savedMessages.removeAt(index);
     await prefs.setStringList(key, _savedMessages);
     setState(() {}); // Refresh UI
+  }
+
+  void _copyToClipboard() {
+    final String messagesText = _savedMessages.join('\n');
+    Clipboard.setData(ClipboardData(text: messagesText));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text('Messages copied to clipboard'),
+    ));
   }
 }
 
