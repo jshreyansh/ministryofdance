@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
 import 'chatView.dart';
+
+import 'package:shared_preferences/shared_preferences.dart';
 import 'login.dart';
 import 'move_description_page.dart';
 import 'dart:async';
