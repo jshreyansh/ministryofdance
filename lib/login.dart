@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'otp_input_screen.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+import 'otp_input_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -11,85 +10,46 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _controller = TextEditingController();
-  // final List<String> validNumbers = ['8770026706', '9929995821', '9340112067'];
   String _errorMessage = '';
-  String _phoneNumber = '';
-  String _verificationId = '';
-  String _token = '';
 
-  // void _validateAndNavigate() {
-  //   if (validNumbers.contains(_controller.text)) {
-  //     // Clear error message
-  //     setState(() {
-  //       _errorMessage = '';
-  //     });
-  //     // Navigate to OTP input screen
-  //     Navigator.push(
-  //       context,
-  //       MaterialPageRoute(builder: (context) => OTPInputScreen()),
-  //     );
-  //   } else {
-  //     // Show error message
-  //     setState(() {
-  //       _errorMessage = 'Invalid number, please try again.';
-  //     });
-  //   }
-  // }
-
-  void _validateAndNavigate() async {
+  Future<void> _validateAndNavigate() async {
     final String inputNumber = _controller.text;
+    const Map<String, String> validNumbersAndTokens = {
+      '8770026706': 'token_for_8770026706',
+      '9929995821': 'token_for_9929995821',
+    };
 
-    // Validate input
-    if (inputNumber.length == 10 &&
-        inputNumber.runes.every((r) => r >= 48 && r <= 57)) {
+    if (validNumbersAndTokens.containsKey(inputNumber)) {
       // Clear error message
       setState(() {
         _errorMessage = '';
       });
 
-      try {
-        // Replace with your actual endpoint and adjust parameters as necessary
-        final response = await http.post(
-          Uri.parse('https://personal-agent-backend.onrender.com/api/sign_up'),
-          headers: {'Content-Type': 'application/json'},
-          body: '{"phone_number": "$inputNumber"}',
-        );
-        if (response.statusCode == 200) {
-          final responseData =
-              json.decode(response.body); // Decode the JSON response body
-          // print('response>>>>>>>>>>>$responseData     $responseData['data']['mobileNumber']');
+      // Save the token associated with the number in shared preferences
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setString('authToken', validNumbersAndTokens[inputNumber]!);
 
-          setState(() {
-            _phoneNumber = responseData['data']['mobileNumber']; // Access decoded data
-            _verificationId =
-                responseData['data']['verificationId']; // Access decoded data
-            _token =
-                responseData['message_central_token']; // Access decoded data
-          });
-          // Assuming the API responds with a 200 status on success
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => OTPInputScreen(
-                verificationId: _verificationId,
-                phoneNumber: _phoneNumber,
-                authToken: _token,
-              ),
-            ),
-          );
-        } else {
-          // Handle server-side error
-          Fluttertoast.showToast(msg: 'Failed to send OTP. Please try again.');
-        }
-      } catch (e) {
-        // Handle network error
-        print('object>>>>>>>>$e');
-        Fluttertoast.showToast(msg: 'Network error. Please try again.');
-      }
+      // Retrieve the token from shared preferences (demonstration)
+      final String? retrievedToken = prefs.getString('authToken');
+      print('Retrieved token: $retrievedToken'); // For debugging purposes
+
+      // Navigate to OTPInputScreen with dummy data
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => OTPInputScreen(
+            verificationId: '123456', // Dummy verification ID
+            phoneNumber: inputNumber,
+            authToken: retrievedToken ?? 'default_token', // Use retrieved token or a default one
+          ),
+        ),
+      );
     } else {
-      // Show error toast
-      Fluttertoast.showToast(
-          msg: 'Invalid number. Please enter a valid 10-digit number.');
+      // Show error message
+      Fluttertoast.showToast(msg: 'Invalid number, please try again.');
+      setState(() {
+        _errorMessage = 'Invalid number, please try again.';
+      });
     }
   }
 
@@ -100,17 +60,16 @@ class _LoginScreenState extends State<LoginScreen> {
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment:
-              CrossAxisAlignment.start, // Align text to the left
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 50.0),
               child: Text(
-                'Login with ID ',
+                'Login with ID',
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xffbf9000), // Gold color for the text
+                  color: Color(0xffbf9000),
                 ),
               ),
             ),
@@ -138,13 +97,12 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
             SizedBox(height: 20),
             Align(
-              alignment: Alignment.centerRight, // Align button to the right
+              alignment: Alignment.centerRight,
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 50.0),
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(
-                        0xffbf9000), // Set button background color to #bf9000
+                    backgroundColor: Color(0xffbf9000),
                     padding: EdgeInsets.symmetric(horizontal: 30, vertical: 15),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20.0),
@@ -152,7 +110,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   onPressed: _validateAndNavigate,
                   child: Text(
-                    'Lets Chat',
+                    'Let\'s Chat',
                     style: TextStyle(
                       fontSize: 18,
                       color: Colors.white,
@@ -167,7 +125,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Text(
                   _errorMessage,
                   style: TextStyle(color: Colors.red, fontSize: 14),
-                  textAlign: TextAlign.left, // Align error text to the left
+                  textAlign: TextAlign.left,
                 ),
               ),
           ],

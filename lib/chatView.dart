@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ChatView extends StatefulWidget {
   @override
@@ -12,75 +11,89 @@ class _ChatViewState extends State<ChatView> {
   final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
   final List<Message> _messages = [];
   final TextEditingController _controller = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+  String? _authToken;
 
   @override
   void initState() {
     super.initState();
-    Timer(Duration(seconds: 2), () {
-      _addMessage(Message(text: 'Hi', isSentByMe: false), animate: true);
-      Timer(Duration(seconds: 2), () {
-        _addMessage(Message(text: 'I\'m Your Guy to help you with your Expense Sir', isSentByMe: false), animate: true);
+    _initializeUser();
+  }
+
+  Future<void> _initializeUser() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    _authToken = prefs.getString('authToken');
+    _initialGreeting();
+  }
+
+  Future<void> _initialGreeting() async {
+    String name = '';
+    if (_authToken == 'token_for_8770026706') {
+      name = 'Shreyansh';
+    } else if (_authToken == 'token_for_9929995821') {
+      name = 'Arpit';
+    }
+
+    Timer(Duration(seconds: 1), () {
+      _addMessage(Message(text: 'Hi, $name', isSentByMe: false));
+      Timer(Duration(seconds: 1), () {
+        _addMessage(Message(text: "I'm Your Guy to help you with your Expense Sir, $name", isSentByMe: false));
       });
     });
   }
 
-  void _addMessage(Message message, {bool animate = false}) {
-    final int index = _messages.length;
+  void _addMessage(Message message) {
     _messages.add(message);
-    if (animate) {
-      _listKey.currentState?.insertItem(index);
-    }
+    _listKey.currentState?.insertItem(_messages.length - 1);
+    Timer(Duration(milliseconds: 100), () => _scrollToBottom());
   }
 
   void _sendMessage() async {
-    final text = _controller.text;
+    final text = _controller.text.trim();
     if (text.isNotEmpty) {
-      _addMessage(Message(text: text, isSentByMe: true), animate: true);
+      _addMessage(Message(text: text, isSentByMe: true));
       _controller.clear();
-      await _fetchResponseFromAPI(text);
+      await _saveMessage(text);
+
+      // Instant response with the name based on authToken
+      String name = _authToken == 'token_for_8770026706' ? 'Shreyansh' : 'Arpit';
+      Timer(Duration(milliseconds: 500), () {
+        _addMessage(Message(text: "Noted $name Sir", isSentByMe: false));
+      });
     }
   }
 
-  Future<void> _fetchResponseFromAPI(String query) async {
-    final url = Uri.parse('https://personal-agent-backend.onrender.com/api/chat_now');
-    final headers = {'Content-Type': 'application/json'};
-    final body = json.encode({
-      "user_message": query,
-      "id": "24"
-    });
-
-    try {
-      final response = await http.post(url, headers: headers, body: body);
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-
-        // Check if 'result' is not null
-        if (data['result'] != null) {
-          // Use the 'result' field to display the message
-          _addMessage(Message(text: data['result'], isSentByMe: false), animate: true);
-        } else {
-          // Handle the case where 'result' is null
-          _addMessage(Message(text: 'No result found.', isSentByMe: false), animate: true);
-        }
-      } else {
-        // Log error status code
-        _addMessage(Message(text: 'Error fetching data: ${response.statusCode}', isSentByMe: false), animate: true);
-      }
-    } catch (e) {
-      // Log any exceptions
-      _addMessage(Message(text: 'Error: $e', isSentByMe: false), animate: true);
-    }
+  Future<void> _saveMessage(String text) async {
+    if (_authToken == null) return;
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    String key = 'sentMessages_$_authToken';
+    List<String> messages = prefs.getStringList(key) ?? [];
+    messages.add(text);
+    await prefs.setStringList(key, messages);
   }
 
+  void _scrollToBottom() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent + 60,
+        duration: Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Color(0xff5b5b5b),
-        title: Text("My Guy", style: TextStyle(color: Colors.white)),
+        backgroundColor: Color(000000),
+        title: Text("AiPal", style: TextStyle(color: Colors.white)),
         centerTitle: true,
         actions: [
+          IconButton(
+            icon: Icon(Icons.history, color: Color(0xffbf9000)),
+            onPressed: _fetchAndShowSavedMessages,
+          ),
           PopupMenuButton<String>(
             onSelected: (value) {
               if (value == 'Logout') {
@@ -88,14 +101,14 @@ class _ChatViewState extends State<ChatView> {
               }
             },
             itemBuilder: (BuildContext context) {
-              return {'Logout'}.map((String choice) {
+              return ['Logout'].map((String choice) {
                 return PopupMenuItem<String>(
                   value: choice,
                   child: Text(choice),
                 );
               }).toList();
             },
-            icon: Icon(Icons.person, color: Color(0xffbf9000)),
+            icon: Icon(Icons.more_vert, color: Color(0xffbf9000)),
           ),
         ],
       ),
@@ -105,22 +118,26 @@ class _ChatViewState extends State<ChatView> {
           Expanded(
             child: AnimatedList(
               key: _listKey,
-              padding: EdgeInsets.only(top: 8.0),
+              controller: _scrollController,
+              padding: EdgeInsets.only(bottom: 10),
               initialItemCount: _messages.length,
               itemBuilder: (context, index, animation) {
                 final message = _messages[index];
-                return SlideTransition(
-                  position: animation.drive(Tween(begin: Offset(0, 1), end: Offset.zero)),
-                  child: Align(
-                    alignment: message.isSentByMe ? Alignment.centerRight : Alignment.centerLeft,
-                    child: Container(
-                      padding: EdgeInsets.all(8.0),
-                      margin: EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
-                      decoration: BoxDecoration(
-                        color: message.isSentByMe ? Color(0xffbf9000) : Colors.grey[700],
-                        borderRadius: BorderRadius.circular(12),
+                return FadeTransition(
+                  opacity: animation,
+                  child: SlideTransition(
+                    position: animation.drive(Tween(begin: Offset(0, 0.1), end: Offset.zero)),
+                    child: Align(
+                      alignment: message.isSentByMe ? Alignment.centerRight : Alignment.centerLeft,
+                      child: Container(
+                        padding: EdgeInsets.all(8.0),
+                        margin: EdgeInsets.symmetric(vertical: 2.0, horizontal: 8.0),
+                        decoration: BoxDecoration(
+                          color: message.isSentByMe ? Color(0xffbf9000) : Colors.grey[700],
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(message.text, style: TextStyle(color: Colors.white)),
                       ),
-                      child: Text(message.text, style: TextStyle(color: Colors.white)),
                     ),
                   ),
                 );
@@ -147,8 +164,7 @@ class _ChatViewState extends State<ChatView> {
                   ),
                 ),
                 IconButton(
-                  icon: Icon(Icons.send),
-                  color: Color(0xffbf9000),
+                  icon: Icon(Icons.send, color: Color(0xffbf9000)),
                   onPressed: _sendMessage,
                 ),
               ],
@@ -159,14 +175,24 @@ class _ChatViewState extends State<ChatView> {
     );
   }
 
+  Future<void> _fetchAndShowSavedMessages() async {
+    if (_authToken == null) return;
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    String key = 'sentMessages_$_authToken';
+    List<String> messages = prefs.getStringList(key) ?? [];
+
+    messages.forEach((message) {
+      _addMessage(Message(text: message, isSentByMe: false));
+    });
+  }
+
   void _logout() {
-    Navigator.pushReplacementNamed(context, '/moves_listing');
+    Navigator.pushReplacementNamed(context, '/login');
   }
 }
 
 class Message {
   String text;
   bool isSentByMe;
-
   Message({required this.text, required this.isSentByMe});
 }
